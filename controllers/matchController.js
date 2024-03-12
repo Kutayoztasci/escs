@@ -27,7 +27,7 @@ router.get('/upcomingSeries/:game', async (req, res) => {
         const gameId = gameData.validateGameId(req.params.game, res);
         if (!gameId) return;
 
-        const endpoint = `/series?filter=end=null&order=start-asc&filter=game.id=${gameId}`;
+        const endpoint = `/series${gameId}&filter=end=null&order=start-asc`;
         const data = await fetchDataFromApi(endpoint, req);
         res.json(data);
     } catch (error) {
@@ -40,7 +40,7 @@ router.get('/matches/:game', async (req, res) => {
         const gameId = gameData.validateGameId(req.params.game, res);
         if (!gameId) return;
 
-        const endpoint = `/matches?filter=game.id=${gameId}`;
+        const endpoint = `/matches${gameId}`;
         const data = await fetchDataFromApi(endpoint, req);
         res.json(data);
     } catch (error) {
@@ -53,7 +53,7 @@ router.get('/liveMatches/:game', async (req, res) => {
         const gameId = gameData.validateGameId(req.params.game, res);
         if (!gameId) return;
 
-        endpoint = `/matches?filter=lifecycle=live&filter=game.id=${gameId}`;
+        endpoint = `/matches${gameId}&filter=lifecycle=live`;
         const data = await fetchDataFromApi(endpoint, req);
         res.json(data);
     } catch (error) {
