@@ -5,7 +5,7 @@ const gameData = {
     }
 };
 
-function validateGameId(gameName, res) {
+function validateGameId(gameName, res, id, optional) {
     const game = gameName.toLowerCase();
     const gameId = gameData.gameIds[game];
 
@@ -14,7 +14,16 @@ function validateGameId(gameName, res) {
         return false;
     }
 
-    return gameId;
+    let url = `` ;
+    if(id !== undefined){
+        url = url + `/${id}`;
+    }
+    if(optional !== undefined){
+        url = url + `/${optional}`;
+    }
+    url = url + `?filter=game.id=${gameId}`;
+
+    return url;
 }
 
 module.exports = { gameData, validateGameId };

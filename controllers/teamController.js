@@ -6,12 +6,12 @@ const router = express.Router();
 let endpoint = ''
 
 
-router.get('/players/:game/:id?/:optional?', async (req, res) => {
+router.get('/teams/:game/:id?/:optional?', async (req, res) => {
     try {
         const url = gameData.validateGameId(req.params.game, res, req.params.id, req.params.optional);
         if (!url) return;
 
-        endpoint = `/players` + url;
+        endpoint = `/teams` + url;
         const data = await fetchDataFromApi(endpoint, req);
         res.json(data);
     } catch (error) {
