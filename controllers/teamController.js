@@ -19,5 +19,28 @@ router.get('/teams/:game/:id?/:optional?', async (req, res) => {
     }
 });
 
+router.get('/teamById/:id', async (req, res) => {
+    try {
+
+        const endpoint = `/teams/${req.params.id}`;
+        const data = await fetchDataFromApi(endpoint, req);
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+router.get('/teamByName/:game/:name', async (req, res) => {
+    try {
+        const gameId = gameData.validateGameId(req.params.game, res);
+        if (!gameId) return;
+
+        const endpoint = `/teams${gameId}&filter=name=${req.params.name}`;
+        const data = await fetchDataFromApi(endpoint, req);
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 
 module.exports = router;
