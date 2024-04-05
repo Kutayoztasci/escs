@@ -5,23 +5,6 @@ const fetchDataFromApi = require('../abiosApi');
 const router = express.Router();
 let endpoint = ''
 
-
-router.get('/matchesToday', async (req, res) => {
-    try {
-        let start = new Date();
-        start.setHours(3);
-        start.setMinutes(1);
-        let end = new Date();
-        end.setHours(23+3);
-        end.setMinutes(59);
-        endpoint = '/matches' + '?filter=start>=' + start.toISOString() + '&end<' + end.toISOString();
-        const data = await fetchDataFromApi(endpoint);
-        res.json(data);
-    } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
 router.get('/upcomingSeries/:game', async (req, res) => {
     try {
         const gameId = gameData.validateGameId(req.params.game, res);
@@ -61,5 +44,65 @@ router.get('/liveMatches/:game', async (req, res) => {
     }
 });
 
+router.get('/upComingMatches/:game/:id', async (req, res) => {
+    try {
+        const gameId = gameData.validateGameId(req.params.game, res);
+        if (!gameId) return;
+
+        const endpoint = `/teams/${req.params.id}/series${gameId}&filter=lifecycle=upcoming`;
+        const data = await fetchDataFromApi(endpoint, req);
+
+        var matchesList = await collectMatches(data, req);
+
+        res.json(matchesList);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+router.get('/oldMatches/:game/:id', async (req, res) => {
+    try {
+        const gameId = gameData.validateGameId(req.params.game, res);
+        if (!gameId) return;
+
+        const endpoint = `/teams/${req.params.id}/series${gameId}&filter=lifecycle=over`;
+        const data = await fetchDataFromApi(endpoint, req);
+
+        var matchesList = await collectMatches(data, req);
+
+        res.json(matchesList);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+async function collectMatches(data, req) {
+    var idList = [];
+    var responseDataList = [];
+
+
+    data.forEach(item => {
+        item.matches.forEach(match => {
+            idList.push(match.id);
+        });
+    });
+
+    for (const id of idList) {
+        var match = await getMatches(id, req);
+        responseDataList.push(match);
+    }
+
+    return responseDataList;
+}
+
+async function getMatches(id, req) {
+    try {
+        endpoint = `/matches/${id}`;
+        const response = await fetchDataFromApi(endpoint, req);
+        return response;
+    } catch (error) {
+        console.error(`${error}`);
+    }
+}
 
 module.exports = router;

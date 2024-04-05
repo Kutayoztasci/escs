@@ -35,7 +35,7 @@ router.get('/teamByName/:game/:name', async (req, res) => {
         const gameId = gameData.validateGameId(req.params.game, res);
         if (!gameId) return;
 
-        const endpoint = `/teams${gameId}&filter=name=${req.params.name}`;
+        const endpoint = `/teams${gameId}&filter=name~=*${req.params.name}*`;
         const data = await fetchDataFromApi(endpoint, req);
         res.json(data);
     } catch (error) {
