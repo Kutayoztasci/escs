@@ -54,4 +54,15 @@ router.get('/teamRosters/:id', async (req, res) => {
     }
 });
 
+router.get('/rosters/:id', async (req, res) => {
+    try {
+
+        const endpoint = `/rosters/${req.params.id}`;
+        const data = await fetchDataFromApi(endpoint, req);
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 module.exports = router;

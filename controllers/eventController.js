@@ -43,6 +43,17 @@ router.get('/tournaments/:id', async (req, res) => {
     }
 });
 
+router.get('/tournamentParticipants/:id', async (req, res) => {
+    try {
+
+        const endpoint = `/tournaments/${req.params.id}/participants`;
+        const data = await fetchDataFromApi(endpoint, req);
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 router.get('/oldEvents/:game/:id', async (req, res) => {
     try {
         const gameId = gameData.validateGameId(req.params.game, res);
