@@ -21,6 +21,28 @@ router.get('/upComingEvents/:game/:id', async (req, res) => {
     }
 });
 
+router.get('/series/:id', async (req, res) => {
+    try {
+
+        const endpoint = `/series/${req.params.id}`;
+        const data = await fetchDataFromApi(endpoint, req);
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+router.get('/tournaments/:id', async (req, res) => {
+    try {
+
+        const endpoint = `/tournaments/${req.params.id}`;
+        const data = await fetchDataFromApi(endpoint, req);
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 router.get('/oldEvents/:game/:id', async (req, res) => {
     try {
         const gameId = gameData.validateGameId(req.params.game, res);
