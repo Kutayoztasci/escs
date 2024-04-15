@@ -85,15 +85,15 @@ router.get('/oldMatches/:game/:id', async (req, res) => {
         const gameId = gameData.validateGameId(req.params.game, res);
         if (!gameId) return;
 
-        const endpoint = `/teams/${req.params.id}/series${gameId}&filter=lifecycle=over`;
+        const endpoint = `/teams/${req.params.id}/series${gameId}&filter=lifecycle=over&order=start-desc`;
         const data = await fetchDataFromApi(endpoint, req);
-        /*var take;
+        var take;
         if(req.query.take !== undefined && req.query.take !== null){
             take = req.query.take;
         }else{
             take = 50;
-        }*/
-        var matchesList = await collectMatches(data, req);
+        }
+        var matchesList = await collectMatches(data, req, take);
 
         res.json(matchesList);
     } catch (error) {
@@ -106,46 +106,47 @@ router.get('/playerMatches/:id', async (req, res) => {
 
         const endpoint = `/players/${req.params.id}/standingrosters`;
         const rosters = await fetchDataFromApi(endpoint, req);
-        var matchesList = await matchesWithRosters(rosters, req);
+        if(req.query.take !== undefined && req.query.take !== null){
+            take = req.query.take;
+        }else{
+            take = 50;
+        }
+        var matchesList = await matchesWithRosters(rosters, req, take);
         res.json(matchesList);
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
 
-async function collectMatches(data, req) {
+async function collectMatches(data, req, take) {
     var idList = [];
     var responseDataList = [];
 
+    let count = 0;
+
     data.forEach(item => {
         item.matches.forEach(match => {
-            idList.push(match.id);
+            if (count < take) {
+                idList.push(match.id);
+                count++;
+            }
         });
     });
 
-    const chunkedIds = chunkArray(idList, 20);
-    for (const chunk of chunkedIds) {
-        const idString = chunk.join(',');
-        const matches = await getMatchesById(idString, req);
-        if (matches !== undefined && matches !== null && matches.length !== 0) {
-            responseDataList.push(matches);
-        }
-    }
+    const idString = idList.join(',');
 
-    /*for (const id of idList) {
-        var match = await getMatchesById(id, req);
-        if (match !== undefined && match !== null && match.length !== 0){
-            responseDataList.push(match);
+    const matches = await getMatchesById(idString, req);
 
-        }
-    }*/
+    //if (matches !== undefined && matches !== null && matches.length !== 0) {
+    //    responseDataList.push(matches);
+    //}
 
-    return responseDataList;
+    return matches;
 }
 
 async function getMatchesById(id, req) {
     try {
-        endpoint = `/matches?filter=id<={${id}}`;
+        endpoint = `/matches?filter=id^{${id}}&order=start-desc`;
         const response = await fetchDataFromApi(endpoint, req);
         return response;
     } catch (error) {
@@ -153,36 +154,45 @@ async function getMatchesById(id, req) {
     }
 }
 
-async function matchesWithRosters(data, req) {
-    var responseDataList = [];
+async function matchesWithRosters(data, req, take) {
+    var idList = [];
+    let count = 0;
+    var dummy;
 
-    for (const item of data) {
+    /*for (const item of data) {
         var match = await getMatchesByRoster(item.roster.id, req);
         if (match !== undefined && match !== null && match.length !== 0){
+            if (count < take){
             responseDataList.push(match);
-
+            count++;
+            }   
+        }
+    }*/
+    for (const item of data) {
+        if(item !== undefined && item !== null){
+            if (item.roster.id !== undefined && item.roster.id !== null){
+                if (count < take){
+                    idList.push(item.roster.id);
+                    count++;
+                }   
+            }
         }
     }
 
-    return responseDataList;
+    const idString = idList.join(',');
+    var match = await getMatchesByRoster(idString, req);
+
+    return match;
 }
 
 async function getMatchesByRoster(id, req) {
     try {
-        endpoint = `/matches?filter=participants.roster.id^{${id}}`;
+        endpoint = `/matches?filter=participants.roster.id^{${id}}&order=start-desc`;
         const response = await fetchDataFromApi(endpoint, req);
         return response;
     } catch (error) {
         console.error(`${error}`);
     }
-}
-
-function chunkArray(array, chunkSize) {
-    const chunks = [];
-    for (let i = 0; i < array.length; i += chunkSize) {
-        chunks.push(array.slice(i, i + chunkSize));
-    }
-    return chunks;
 }
 
 module.exports = router;
