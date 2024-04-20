@@ -40,65 +40,72 @@ router.get('/teamSummary/:game/:name', async (req, res) => {
         await new Promise(resolve => setTimeout(resolve, 50));
 
         upcomingSeriesData = upcomingSeriesData.filter(element => element['participants'].length === 2);
-        //Yaklaşan serideki roster ID'lerini al
-        var upMatchesIdList = [];
-        var upTournamentIdList = [];
         
-        for (i=0; i<upcomingSeriesData.length; i++) {
-            upMatchesIdList.push(upcomingSeriesData[i]['participants'][0]['roster']['id']);
-            upMatchesIdList.push(upcomingSeriesData[i]['participants'][1]['roster']['id']);
-            upTournamentIdList.push(upcomingSeriesData[i]['tournament']['id']);
+        if(upcomingSeriesData > 0){
+            //Yaklaşan serideki roster ID'lerini al
+            var upMatchesIdList = [];
+            var upTournamentIdList = [];
+            
+            for (i=0; i<upcomingSeriesData.length; i++) {
+                upMatchesIdList.push(upcomingSeriesData[i]['participants'][0]['roster']['id']);
+                upMatchesIdList.push(upcomingSeriesData[i]['participants'][1]['roster']['id']);
+                upTournamentIdList.push(upcomingSeriesData[i]['tournament']['id']);
+            }
+
+            const upMatchesIdListString = upMatchesIdList.join(',');
+            const upTournamentIdListString = upTournamentIdList.join(',');
+
+            //Yaklaşan serideki turnuvaların verisini al
+            const upMatchesTourInfoUrl = `/tournaments?filter=id<={${upTournamentIdListString}}`;
+            const upMatchesTourInfoData = await fetchDataFromApi(upMatchesTourInfoUrl, req);
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            var upmatchesTour = {};
+            for(i=0; i<upMatchesTourInfoData.length; i++){
+                upmatchesTour[`${upMatchesTourInfoData[i]['id']}`] = {"tournament_title":upMatchesTourInfoData[i]['title']}
+            }
+            
+            //Yaklaşan serideki rosterların verisini al
+            const upMatchesRostersInfoUrl = `/rosters?filter=id<={${upMatchesIdListString}}`;
+            const upMatchesRostersInfoData = await fetchDataFromApi(upMatchesRostersInfoUrl, req);
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            upMatchesRostersInfoData.sort((a, b) => a.team.id - b.team.id);
+
+            //Yaklaşan serideki takım ID'lerini al
+            const upMatchesTeamIdList = [];
+            const upMatchesRosterIdList = [];
+
+            for(i=0; i<upMatchesRostersInfoData.length; i++){
+                upMatchesTeamIdList.push(upMatchesRostersInfoData[i]['team']['id']);
+                upMatchesRosterIdList.push(upMatchesRostersInfoData[i]['id']);
+            }
+
+            const uniqueUpMatchesRosterIdList = [...new Set(upMatchesRosterIdList)];
+            const upMatchesTeamIdListString = upMatchesTeamIdList.join(',');
+
+            const upMatchesTeamsInfoUrl = `/teams?filter=id<={${upMatchesTeamIdListString}}`;
+            const upMatchesTeamsInfoData = await fetchDataFromApi(upMatchesTeamsInfoUrl, req);
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            var upMatchesTeams = {};
+
+            for(i=0; i<uniqueUpMatchesRosterIdList.length; i++){
+                upMatchesTeams[`${uniqueUpMatchesRosterIdList[i]}`] = {"name":upMatchesTeamsInfoData[i]['name'], "logo": upMatchesTeamsInfoData[i]['images'][0]['url']};
+            }
+
+            for(i=0; i<upcomingSeriesData.length; i++){
+                upcomingSeriesData[i]['participants'][0]['name'] = upMatchesTeams[upcomingSeriesData[i]['participants'][0]['roster']['id']].name;
+                upcomingSeriesData[i]['participants'][0]['logo'] = upMatchesTeams[upcomingSeriesData[i]['participants'][0]['roster']['id']].logo;
+
+                upcomingSeriesData[i]['participants'][1]['name'] = upMatchesTeams[upcomingSeriesData[i]['participants'][1]['roster']['id']].name;
+                upcomingSeriesData[i]['participants'][1]['logo'] = upMatchesTeams[upcomingSeriesData[i]['participants'][1]['roster']['id']].logo;
+
+                upcomingSeriesData[i]['tournament']['name'] = upmatchesTour[upcomingSeriesData[i]['tournament']['id']].tournament_title;
+            }
+
         }
-        
-        const upMatchesIdListString = upMatchesIdList.join(',');
-        const upTournamentIdListString = upTournamentIdList.join(',');
-
-        //Yaklaşan serideki turnuvaların verisini al
-        const upMatchesTourInfoUrl = `/tournaments?filter=id<={${upTournamentIdListString}}`;
-        const upMatchesTourInfoData = await fetchDataFromApi(upMatchesTourInfoUrl, req);
-        await new Promise(resolve => setTimeout(resolve, 50));
-        
-        var upmatchesTour = {};
-        for(i=0; i<upMatchesTourInfoData.length; i++){
-            upmatchesTour[`${upMatchesTourInfoData[i]['id']}`] = {"tournament_title":upMatchesTourInfoData[i]['title']}
-        }
-        
-        //Yaklaşan serideki rosterların verisini al
-        const upMatchesRostersInfoUrl = `/rosters?filter=id<={${upMatchesIdListString}}`;
-        const upMatchesRostersInfoData = await fetchDataFromApi(upMatchesRostersInfoUrl, req);
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        upMatchesRostersInfoData.sort((a, b) => a.team.id - b.team.id);
-
-        //Yaklaşan serideki takım ID'lerini al
-        const upMatchesTeamIdList = [];
-        
-        for(i=0; i<upMatchesRostersInfoData.length; i++){
-            upMatchesTeamIdList.push(upMatchesRostersInfoData[i]['team']['id']);
-        }
-
-        const upMatchesTeamIdListString = upMatchesTeamIdList.join(',');
-
-        const upMatchesTeamsInfoUrl = `/teams?filter=id<={${upMatchesTeamIdListString}}`;
-        const upMatchesTeamsInfoData = await fetchDataFromApi(upMatchesTeamsInfoUrl, req);
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        var upMatchesTeams = {};
-
-        for(i=0; i<upMatchesRostersInfoData.length; i++){
-            upMatchesTeams[`${upMatchesRostersInfoData[i]['id']}`] = {"name":upMatchesTeamsInfoData[i]['name'], "logo": upMatchesTeamsInfoData[i]['images'][0]['url']};
-        }
-
-        for(i=0; i<upcomingSeriesData.length; i++){
-            upcomingSeriesData[i]['participants'][0]['name'] = upMatchesTeams[upcomingSeriesData[i]['participants'][0]['roster']['id']].name;
-            upcomingSeriesData[i]['participants'][0]['logo'] = upMatchesTeams[upcomingSeriesData[i]['participants'][0]['roster']['id']].logo;
-
-            upcomingSeriesData[i]['participants'][1]['name'] = upMatchesTeams[upcomingSeriesData[i]['participants'][1]['roster']['id']].name;
-            upcomingSeriesData[i]['participants'][1]['logo'] = upMatchesTeams[upcomingSeriesData[i]['participants'][1]['roster']['id']].logo;
-
-            upcomingSeriesData[i]['tournament']['name'] = upmatchesTour[upcomingSeriesData[i]['tournament']['id']].tournament_title;
-        }
-        
+       
         //Son 5 seri bilgisini al
         const endedSeriesUrl = `/teams/${teamData['id']}/series?filter=lifecycle=over&order=start-desc&take=5`;
         var endedSeriesData = await fetchDataFromApi(endedSeriesUrl, req);
@@ -135,11 +142,13 @@ router.get('/teamSummary/:game/:name', async (req, res) => {
 
         //Son 5 serideki takım ID'lerini al
         const lastMatchesTeamIdList = [];
-        
-        for(i=0; i<6; i++){
+        const lastMatchesRosterIdList = [];
+
+        for(i=0; i<lastMatchesRostersInfoData.length; i++){
             lastMatchesTeamIdList.push(lastMatchesRostersInfoData[i]['team']['id']);
+            lastMatchesRosterIdList.push(lastMatchesRostersInfoData[i]['id']);
         }
-        
+        const uniqueLastMatchesRosterIdList = [...new Set(lastMatchesRosterIdList)];
         const lastMatchesTeamIdListString = lastMatchesTeamIdList.join(',');
 
         const lastMatchesTeamsInfoUrl = `/teams?filter=id<={${lastMatchesTeamIdListString}}`;
@@ -148,39 +157,45 @@ router.get('/teamSummary/:game/:name', async (req, res) => {
 
         var lastMatchesTeams = {};
 
-        for(i=0; i<6; i++){
-            lastMatchesTeams[`${lastMatchesRostersInfoData[i]['id']}`] = {"name":lastMatchesTeamsInfoData[i]['name'], "logo": lastMatchesTeamsInfoData[i]['images'][0]['url']};
+        for(i=0; i<uniqueLastMatchesRosterIdList.length; i++){
+            lastMatchesTeams[`${uniqueLastMatchesRosterIdList[i]}`] = {"name":lastMatchesTeamsInfoData[i]['name'], "logo": lastMatchesTeamsInfoData[i]['images'][0]['url']};
         }
-        
 
         for(i=0; i<5; i++){
-            if(endedSeriesData[i]['best_of'] == 1){
-                const bo1matchUrl = `/matches/${endedSeriesData[i]['matches'][0]['id']}`;
-                const bo1matchData = await fetchDataFromApi(bo1matchUrl, req);
-                await new Promise(resolve => setTimeout(resolve, 50));
-                endedSeriesData[i]['participants'] = bo1matchData['participants'];
+            try{
+                oldParticipants = endedSeriesData[i]['participants'];
+                if(endedSeriesData[i]['best_of'] == 1){
+                    const bo1matchUrl = `/matches/${endedSeriesData[i]['matches'][0]['id']}`;
+                    const bo1matchData = await fetchDataFromApi(bo1matchUrl, req);
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                    endedSeriesData[i]['participants'] = bo1matchData['participants'];
+                }
+    
+                endedSeriesData[i]['participants'][0]['name'] = lastMatchesTeams[oldParticipants[0]['roster']['id']].name;
+                endedSeriesData[i]['participants'][0]['logo'] = lastMatchesTeams[oldParticipants[0]['roster']['id']].logo;
+                
+                endedSeriesData[i]['participants'][1]['name'] = lastMatchesTeams[oldParticipants[1]['roster']['id']].name;
+                endedSeriesData[i]['participants'][1]['logo'] = lastMatchesTeams[oldParticipants[1]['roster']['id']].logo;
+    
+                endedSeriesData[i]['tournament']['name'] = lastMatchesTour[endedSeriesData[i]['tournament']['id']].tournament_title;
+    
+                if(endedSeriesData[i]['participants'][0]['name'] !== teamData['name']){
+                    var temp = endedSeriesData[i]['participants'][0];
+                    endedSeriesData[i]['participants'][0] = endedSeriesData[i]['participants'][1];
+                    endedSeriesData[i]['participants'][1] = temp;
+                }
+    
+                if(endedSeriesData[i]['participants'][0]['winner'])
+                    endedSeriesData[i]['isWin'] = "Win";
+                else
+                    endedSeriesData[i]['isWin'] = "Lost";
+
+            }
+            catch(error){
+                console.log(error);
             }
 
-            endedSeriesData[i]['participants'][0]['name'] = lastMatchesTeams[endedSeriesData[i]['participants'][0]['roster']['id']].name;
-            endedSeriesData[i]['participants'][0]['logo'] = lastMatchesTeams[endedSeriesData[i]['participants'][0]['roster']['id']].logo;
-
-            endedSeriesData[i]['participants'][1]['name'] = lastMatchesTeams[endedSeriesData[i]['participants'][1]['roster']['id']].name;
-            endedSeriesData[i]['participants'][1]['logo'] = lastMatchesTeams[endedSeriesData[i]['participants'][1]['roster']['id']].logo;
-
-            endedSeriesData[i]['tournament']['name'] = lastMatchesTour[endedSeriesData[i]['tournament']['id']].tournament_title;
-
-            if(endedSeriesData[i]['participants'][0]['name'] !== teamData['name']){
-                var temp = endedSeriesData[i]['participants'][0];
-                endedSeriesData[i]['participants'][0] = endedSeriesData[i]['participants'][1];
-                endedSeriesData[i]['participants'][1] = temp;
-            }
-
-            if(endedSeriesData[i]['participants'][0]['winner'])
-                endedSeriesData[i]['isWin'] = "Win";
-            else
-                endedSeriesData[i]['isWin'] = "Lost";
         }
-
         //Takım winrate bilgilerini al
         const teamAggregateUrl = `/teams/aggregates?&filter=team.id=${teamData['id']}`;
         const teamAggregateData = await fetchDataFromApi(teamAggregateUrl, req);
@@ -241,7 +256,6 @@ router.get('/teamSummary/:game/:name', async (req, res) => {
         //Map bilgilerini al
         const mapsUrl = `/maps?filter=id<={${mapIDString}}`;
         const mapsData = await fetchDataFromApi(mapsUrl, req);
-        await new Promise(resolve => setTimeout(resolve, 50));
 
         //Takım'ın map objesini oluştur
         var teamMaps = [];
@@ -256,19 +270,35 @@ router.get('/teamSummary/:game/:name', async (req, res) => {
         teamMaps.sort((a, b) => b.match_count - a.match_count);
 
         /* Response Json'u oluştur */
-        var teamInfos = {
-            "name":teamData['name'], 
-            "logo":teamData['images'][0]['url'], 
-            "region":teamData['region']['name'], 
-            "country":teamData['region']['country']['name'],
-            "soical":teamData['social_media_accounts'],
-            "roster":playersData,
-            "best_player":bestPlayerData,
-            "map_ratings": {"count":teamMaps.length, "maps":teamMaps},
-            "last_matches":{"count":endedSeriesData.length, "matches":endedSeriesData},
-            "coming_matches":{"count":upcomingSeriesData.length, "matches":upcomingSeriesData}
-        };
-        
+        if(teamData['region']['country'] == null){
+            var teamInfos = {
+                "name":teamData['name'], 
+                "logo":teamData['images'][0]['url'], 
+                "region":teamData['region']['name'], 
+                "country":teamData['region']['name'],
+                "soical":teamData['social_media_accounts'],
+                "roster":playersData,
+                "best_player":bestPlayerData,
+                "map_ratings": {"count":teamMaps.length, "maps":teamMaps},
+                "last_matches":{"count":endedSeriesData.length, "matches":endedSeriesData},
+                "coming_matches":{"count":upcomingSeriesData.length, "matches":upcomingSeriesData}
+            };
+        }
+        else{
+            var teamInfos = {
+                "name":teamData['name'], 
+                "logo":teamData['images'][0]['url'], 
+                "region":teamData['region']['name'], 
+                "country":teamData['region']['country']['name'],
+                "soical":teamData['social_media_accounts'],
+                "roster":playersData,
+                "best_player":bestPlayerData,
+                "map_ratings": {"count":teamMaps.length, "maps":teamMaps},
+                "last_matches":{"count":endedSeriesData.length, "matches":endedSeriesData},
+                "coming_matches":{"count":upcomingSeriesData.length, "matches":upcomingSeriesData}
+            };
+        }
+
        res.json(teamInfos);
     } catch (error) {
         res.status(500).json({ error });
