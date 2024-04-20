@@ -6,6 +6,8 @@ const calendarController = require('./controllers/calendarController');
 const teamController = require('./controllers/teamController');
 const eventController = require('./controllers/eventController');
 const teamSummary = require('./controllers/teamSummary');
+const postgameController = require('./controllers/postgameController');
+
 
 
 app.use('/api', matchController);
@@ -14,6 +16,7 @@ app.use('/api', calendarController);
 app.use('/api', teamController);
 app.use('/api', eventController);
 app.use('/api', teamSummary);
+app.use('/api', postgameController);
 
 
 

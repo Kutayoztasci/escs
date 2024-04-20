@@ -64,6 +64,36 @@ router.get('/liveMatches/:game', async (req, res) => {
     }
 });
 
+router.get('/liveMatchDetails/:game/:id', async (req, res) => {
+    try {
+        const gameId = gameData.validateGameId(req.params.game, res);
+        if (!gameId) return;
+
+        endpoint = `/matches/${req.params.id}`;
+        const coverage = await fetchDataFromApi(endpoint, req);
+
+        switch (true) {
+            case coverage.coverage.data.realtime.api.expectation === "available":
+                endpoint = `/matches/${req.params.id}/realtime/api/summary`;
+                break;
+            case coverage.coverage.data.live.api.expectation === "available":
+                endpoint = `/matches/${req.params.id}/live/api/summary`;
+                break;
+            case coverage.coverage.data.live.cv.expectation === "available":
+                endpoint = `/matches/${req.params.id}/live/cv/summary`;
+                break;
+            default:
+                throw new Error("Canlı veri mevcut değil.");
+        }
+
+        const matchDetail = await fetchDataFromApi(endpoint, req);
+
+        res.json(matchDetail);
+    } catch (error) {
+        res.status(500).json(error);
+    }
+});
+
 router.get('/upComingMatches/:game/:id', async (req, res) => {
     try {
         const gameId = gameData.validateGameId(req.params.game, res);
@@ -91,7 +121,7 @@ router.get('/oldMatches/:game/:id', async (req, res) => {
         if(req.query.take !== undefined && req.query.take !== null){
             take = req.query.take;
         }else{
-            take = 50;
+            take = 20;
         }
         var matchesList = await collectMatches(data, req, take);
 
@@ -109,7 +139,7 @@ router.get('/playerMatches/:id', async (req, res) => {
         if(req.query.take !== undefined && req.query.take !== null){
             take = req.query.take;
         }else{
-            take = 50;
+            take = 20;
         }
         var matchesList = await matchesWithRosters(rosters, req, take);
         res.json(matchesList);
@@ -120,8 +150,7 @@ router.get('/playerMatches/:id', async (req, res) => {
 
 async function collectMatches(data, req, take) {
     var idList = [];
-    var responseDataList = [];
-
+    var matches;
     let count = 0;
 
     data.forEach(item => {
@@ -133,10 +162,19 @@ async function collectMatches(data, req, take) {
         });
     });
 
-    const idString = idList.join(',');
-
-    const matches = await getMatchesById(idString, req);
-
+    if(take<50){
+        const idString = idList.join(',');
+        matches = await getMatchesById(idString, req);
+    }else{
+        const chunkSize = 50;
+        for (let i = 0; i < idList.length; i += chunkSize) {
+            const chunk = idList.slice(i, i + chunkSize);
+            const idString = chunk.join(',');
+            matches.push(await getMatchesById(idString, req));
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+    }
+    
     return matches;
 }
 
@@ -153,9 +191,10 @@ async function getMatchesById(id, req) {
 async function matchesWithRosters(data, req, take) {
     var idList = [];
     let count = 0;
+    var match;
 
     for (const item of data) {
-        if(item !== undefined && item !== null){
+        if(item !== undefined && item !== null && item.roster !== undefined && item.roster !== null){
             if (item.roster.id !== undefined && item.roster.id !== null){
                 if (count < take){
                     idList.push(item.roster.id);
@@ -165,8 +204,18 @@ async function matchesWithRosters(data, req, take) {
         }
     }
 
-    const idString = idList.join(',');
-    var match = await getMatchesByRoster(idString, req);
+    if(take<50){
+        const idString = idList.join(',');
+        match = await getMatchesByRoster(idString, req);
+    }else{
+        const chunkSize = 50;
+        for (let i = 0; i < ids.length; i += chunkSize) {
+            const chunk = ids.slice(i, i + chunkSize);
+            const idString = chunk.join(',');
+            match.push(await getMatchesByRoster(idString, req));
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+    }
 
     return match;
 }
