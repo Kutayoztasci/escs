@@ -1,3 +1,9 @@
+const express = require('express');
+const e = require("express");
+const fetchDataFromApi = require('../abiosApi');
+const gameData = require("../gameData");
+const router = express.Router();
+
 router.get('/teamSummary/:game/:name', async (req, res) => {
     try {
         const gameId = gameData.validateGameId(req.params.game, res);
@@ -268,3 +274,5 @@ router.get('/teamSummary/:game/:name', async (req, res) => {
         res.status(500).json({ error });
     }
 });
+
+module.exports = router;
