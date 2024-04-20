@@ -121,7 +121,7 @@ router.get('/oldMatches/:game/:id', async (req, res) => {
         if(req.query.take !== undefined && req.query.take !== null){
             take = req.query.take;
         }else{
-            take = 20;
+            take = 50;
         }
         var matchesList = await collectMatches(data, req, take);
 
@@ -136,12 +136,7 @@ router.get('/playerMatches/:id', async (req, res) => {
 
         const endpoint = `/players/${req.params.id}/standingrosters`;
         const rosters = await fetchDataFromApi(endpoint, req);
-        if(req.query.take !== undefined && req.query.take !== null){
-            take = req.query.take;
-        }else{
-            take = 20;
-        }
-        var matchesList = await matchesWithRosters(rosters, req, take);
+        var matchesList = await matchesWithRosters(rosters, req);
         res.json(matchesList);
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
@@ -180,7 +175,7 @@ async function collectMatches(data, req, take) {
 
 async function getMatchesById(id, req) {
     try {
-        endpoint = `/matches?filter=id^{${id}}&order=start-desc`;
+        endpoint = `/matches?filter=id<={${id}}`;
         const response = await fetchDataFromApi(endpoint, req);
         return response;
     } catch (error) {
@@ -222,12 +217,20 @@ async function matchesWithRosters(data, req, take) {
 
 async function getMatchesByRoster(id, req) {
     try {
-        endpoint = `/matches?filter=participants.roster.id^{${id}}&order=start-desc`;
+        endpoint = `/matches?filter=participants.roster.id^{${id}}`;
         const response = await fetchDataFromApi(endpoint, req);
         return response;
     } catch (error) {
         console.error(`${error}`);
     }
+}
+
+function chunkArray(array, chunkSize) {
+    const chunks = [];
+    for (let i = 0; i < array.length; i += chunkSize) {
+        chunks.push(array.slice(i, i + chunkSize));
+    }
+    return chunks;
 }
 
 module.exports = router;
