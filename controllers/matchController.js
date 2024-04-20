@@ -137,10 +137,6 @@ async function collectMatches(data, req, take) {
 
     const matches = await getMatchesById(idString, req);
 
-    //if (matches !== undefined && matches !== null && matches.length !== 0) {
-    //    responseDataList.push(matches);
-    //}
-
     return matches;
 }
 
@@ -157,17 +153,7 @@ async function getMatchesById(id, req) {
 async function matchesWithRosters(data, req, take) {
     var idList = [];
     let count = 0;
-    var dummy;
 
-    /*for (const item of data) {
-        var match = await getMatchesByRoster(item.roster.id, req);
-        if (match !== undefined && match !== null && match.length !== 0){
-            if (count < take){
-            responseDataList.push(match);
-            count++;
-            }   
-        }
-    }*/
     for (const item of data) {
         if(item !== undefined && item !== null){
             if (item.roster.id !== undefined && item.roster.id !== null){
