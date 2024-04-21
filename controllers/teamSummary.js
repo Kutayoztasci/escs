@@ -41,7 +41,7 @@ router.get('/teamSummary/:game/:name', async (req, res) => {
 
         upcomingSeriesData = upcomingSeriesData.filter(element => element['participants'].length === 2);
         
-        if(upcomingSeriesData > 0){
+        if(upcomingSeriesData.length > 0){
             //Yaklaşan serideki roster ID'lerini al
             var upMatchesIdList = [];
             var upTournamentIdList = [];
