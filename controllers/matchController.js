@@ -2,8 +2,11 @@ const express = require('express');
 const e = require("express");
 const gameData = require("../gameData");
 const fetchDataFromApi = require('../abiosApi');
+const { wss, clients } = require('../liveWebsocketServer');
 const router = express.Router();
 let endpoint = ''
+
+const WebSocket = require('ws');
 
 router.get('/upcomingSeries/:game', async (req, res) => {
     try {
@@ -64,7 +67,7 @@ router.get('/liveMatches/:game', async (req, res) => {
     }
 });
 
-router.get('/liveMatchDetails/:game/:id', async (req, res) => {
+/*router.get('/liveMatchDetails/:game/:id', async (req, res) => {
     try {
         const gameId = gameData.validateGameId(req.params.game, res);
         if (!gameId) return;
@@ -91,6 +94,16 @@ router.get('/liveMatchDetails/:game/:id', async (req, res) => {
         res.json(matchDetail);
     } catch (error) {
         res.status(500).json(error);
+    }
+});*/
+
+router.get('/liveMatchDetails/:game/:id', async (req, res) => {
+    try {
+        const { game, id } = req.params;
+        startLiveUpdates(game, id);
+        res.json({ message: 'Live updates started via WebSocket' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -231,6 +244,48 @@ function chunkArray(array, chunkSize) {
         chunks.push(array.slice(i, i + chunkSize));
     }
     return chunks;
+}
+
+async function checkLiveForUpdates(game, id) {
+    const gameId = gameData.validateGameId(game);
+    if (!gameId) return;
+
+    let endpoint = `/matches/${id}`;
+    const coverage = await fetchDataFromApi(endpoint, { headers: {} });
+
+    switch (true) {
+        case coverage.coverage.data.realtime.api.expectation === "available":
+            endpoint = `/matches/${id}/realtime/api/summary`;
+            break;
+        case coverage.coverage.data.live.api.expectation === "available":
+            endpoint = `/matches/${id}/live/api/summary`;
+            break;
+        case coverage.coverage.data.live.cv.expectation === "available":
+            endpoint = `/matches/${id}/live/cv/summary`;
+            break;
+        default:
+            throw new Error("Canlı veri mevcut değil.");
+    }
+
+    const matchDetail = await fetchDataFromApi(endpoint, { headers: {} });
+
+    clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(matchDetail));
+        }
+    });
+}
+
+function startLiveUpdates(game, id) {
+    setInterval(async () => {
+        if (clients.size > 0) {
+            try {
+                await checkLiveForUpdates(game, id);
+            } catch (error) {
+                console.error(`Error checking live updates for game ${game} and match ${id}: ${error.message}`);
+            }
+        }
+    }, 5000);
 }
 
 module.exports = router;
