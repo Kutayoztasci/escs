@@ -385,11 +385,11 @@ async function checkLiveForUpdates(game, id) {
 
     const matchDetail = await fetchDataFromApi(match_endpoint, { headers: {} });
     const killTimeLine = await fetchDataFromApi(kill_tl_endpoint, { headers: {} });
+    matchDetail.killTimeLine = killTimeLine;
     
     clients.forEach(client => {
         if (client.readyState === WebSocket.OPEN) {
             client.send(JSON.stringify(matchDetail));
-            client.send(JSON.stringify(killTimeLine));
         }
     });
 }
