@@ -362,26 +362,34 @@ async function checkLiveForUpdates(game, id) {
 
     let endpoint = `/matches/${id}`;
     const coverage = await fetchDataFromApi(endpoint, { headers: {} });
-
+    
+    let match_endpoint = ``;
+    let kill_tl_endpoint = ``;
+    
     switch (true) {
         case coverage.coverage.data.realtime.api.expectation === "available":
-            endpoint = `/matches/${id}/realtime/api/summary`;
+            match_endpoint = `/matches/${id}/realtime/api/summary`;
+            kill_tl_endpoint = `/matches/${id}/live/cv/timelines/kills`;
             break;
         case coverage.coverage.data.live.api.expectation === "available":
-            endpoint = `/matches/${id}/live/api/summary`;
+            match_endpoint = `/matches/${id}/live/api/summary`;
+            kill_tl_endpoint = `/matches/${id}/live/cv/timelines/kills`;
             break;
         case coverage.coverage.data.live.cv.expectation === "available":
-            endpoint = `/matches/${id}/live/cv/summary`;
+            match_endpoint = `/matches/${id}/live/cv/summary`;
+            kill_tl_endpoint = `/matches/${id}/live/cv/timelines/kills`;
             break;
         default:
             throw new Error("Canlı veri mevcut değil.");
     }
 
-    const matchDetail = await fetchDataFromApi(endpoint, { headers: {} });
-
+    const matchDetail = await fetchDataFromApi(match_endpoint, { headers: {} });
+    const killTimeLine = await fetchDataFromApi(kill_tl_endpoint, { headers: {} });
+    
     clients.forEach(client => {
         if (client.readyState === WebSocket.OPEN) {
             client.send(JSON.stringify(matchDetail));
+            client.send(JSON.stringify(killTimeLine));
         }
     });
 }
