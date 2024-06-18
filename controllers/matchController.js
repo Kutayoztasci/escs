@@ -395,7 +395,7 @@ function startLiveUpdates(game, id) {
                 console.error(`Error checking live updates for game ${game} and match ${id}: ${error.message}`);
             }
         }
-    }, 5000);
+    }, 1000);
 }
 
 module.exports = router;
