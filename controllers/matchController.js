@@ -156,6 +156,116 @@ router.get('/playerMatches/:id', async (req, res) => {
     }
 });
 
+//For teams update
+router.get('/teamsupdate/:game', async (req, res) => {
+    try {
+        const gameId = gameData.validateGameId(req.params.game, res);
+        if (!gameId) return;
+        const endpoint = `/teams${gameId}`;
+        const data = await fetchDataFromApi(endpoint, req);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+
+//For rosters update
+router.get('/rostersupdate/:game', async (req, res) => {
+    try {
+        const gameId = gameData.validateGameId(req.params.game, res);
+        if (!gameId) return;
+        const endpoint = `/rosters${gameId}`;
+        const data = await fetchDataFromApi(endpoint, req);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+//For players update
+router.get('/playersupdate/:game/', async (req, res) => {
+    try {
+        const gameId = gameData.validateGameId(req.params.game, res);
+        if (!gameId) return;
+        const endpoint = `/players${gameId}`;
+        const data = await fetchDataFromApi(endpoint, req);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+//For tournaments update
+router.get('/tournamentsupdate/:game', async (req, res) => {
+    try {
+        const gameId = gameData.validateGameId(req.params.game, res);
+        if (!gameId) return;
+        const endpoint = `/tournaments${gameId}`;
+        const data = await fetchDataFromApi(endpoint, req);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+//For playerstats update
+router.get('/playerstatsupdate/:id', async (req, res) => {
+    try {
+        const endpoint = `/matches/${req.params.id}/postgame/server/summary`;
+        const data = await fetchDataFromApi(endpoint, req);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+//For playerstats update
+router.get('/playerstatsupdate2/:id', async (req, res) => {
+    try {
+        const endpoint = `/matches/${req.params.id}/live/cv/summary`;
+        const data = await fetchDataFromApi(endpoint, req);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+
+//For series update
+router.get('/seriesupdate/:game', async (req, res) => {
+    try {
+        const gameId = gameData.validateGameId(req.params.game, res);
+        if (!gameId) return;
+        const endpoint = `/series${gameId}`;
+        const data = await fetchDataFromApi(endpoint, req);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+//For matches update
+router.get('/matchesupdate/:game', async (req, res) => {
+    try {
+        const gameId = gameData.validateGameId(req.params.game, res);
+        if (!gameId) return;
+        const endpoint = `/matches${gameId}`;
+        const data = await fetchDataFromApi(endpoint, req);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 async function collectMatches(data, req, take) {
     var idList = [];
     var matches;
